@@ -2,9 +2,12 @@ import './App.scss';
 import Sidebar from './components/Sidebar';
 import Chat from './components/Chat';
 import Login from './components/Login';
-  
+import { useAppSelector } from './app/hooks';
+import { RootState } from './app/store';
+
 function App() {
-  const user = null;
+  const user = useAppSelector((state: RootState) => state.user.user);
+  console.log(user);
 
   return (
     <div className="App">
@@ -14,7 +17,6 @@ function App() {
             {/* <Suspense fallback={<div>...Loading</div>}> */}
             <Sidebar />
             {/* </Suspense> */}
-
           {/* home */}
           <Chat />
         </>

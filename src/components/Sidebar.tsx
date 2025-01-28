@@ -5,8 +5,26 @@ import { ExpandMoreOutlined, Mic, Settings } from "@mui/icons-material";
 import MicIcon from '@mui/icons-material/Mic';
 import HeadphonesIcon from '@mui/icons-material/Headphones';
 import SettingsIcon from '@mui/icons-material/Settings';
+import { auth } from '../firebase';
+import { useAppDispatch } from "../app/hooks";
+import { logout } from "../features/userSlice";
+import { useAppSelector } from '../app/hooks';
+import { RootState } from '../app/store';
 
 const Sidebar = () => {
+  const user = useAppSelector((state: RootState) => state.user.user);
+  const dispatch = useAppDispatch();
+
+  const handleSignOut = () => {
+    auth.signOut()
+      .then(() => {
+        dispatch(logout());
+      })
+      .catch((error) => {
+        console.error("Sign out error:", error);
+      });
+  };
+
   return (
     <div className="sidebar">
       {/* sidebarLeft */}
@@ -47,12 +65,24 @@ const Sidebar = () => {
             </div>
           </div>
           <div className="sidebarSettings">
-            <img src="./discord.png" alt="customIcon" className="customIcon smallIcon" />
-            <div className="sidebarVoice">
-              <MicIcon />
-              <HeadphonesIcon />
-              <SettingsIcon />
-            </div>
+              <div className="sidebarAccount">
+                <img 
+                  src={user?.photo}
+                  alt="customIcon" 
+                  onClick={handleSignOut} 
+                  className="customIcon smallIcon" 
+                />
+                <div className="accountName">
+                  <h4>{user?.displayName}</h4>
+                  <span>#{user?.uid.substring(0, 4)}</span>
+                </div>
+              </div>
+
+              <div className="sidebarVoice">
+                <MicIcon />
+                <HeadphonesIcon />
+                <SettingsIcon />
+              </div>
           </div>
         </div>
       </div>
