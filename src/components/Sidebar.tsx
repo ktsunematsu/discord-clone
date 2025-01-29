@@ -5,25 +5,39 @@ import { ExpandMoreOutlined, Mic, Settings } from "@mui/icons-material";
 import MicIcon from '@mui/icons-material/Mic';
 import HeadphonesIcon from '@mui/icons-material/Headphones';
 import SettingsIcon from '@mui/icons-material/Settings';
-import { auth, db } from '../firebase';
+import { auth } from '../firebase';
 import { useAppDispatch } from "../app/hooks";
 import { logout } from "../features/userSlice";
 import { useAppSelector } from '../app/hooks';
 import { RootState } from '../app/store';
-import { collection, onSnapshot, query } from 'firebase/firestore';
 import { useState, useEffect } from 'react';
 import SidebarChannel from './SidebarChannel';
+import { useFirebase} from '../hooks/useFirebase';
+import { collection, addDoc } from "firebase/firestore";
+import { db } from "../firebase";
 
 interface Channel {
   id: string;
-  channel: string;
+  channel: {
+    channelName: string;
+  };
 }
 
 const Sidebar = () => {
-  const [channels, setChannels] = useState<Channel[]>([]);
-
+  const { documents: channels } = useFirebase("channels");
+  console.log(channels);
   const user = useAppSelector((state: RootState) => state.user.user);
   
+  const addChannel = async () => {
+    const channelName = prompt("Enter the channel name");
+    if (channelName) {
+      const docRef = await addDoc(collection(db, "channels"), {
+        channelName: channelName,
+      });
+      console.log("Document written with ID: ", docRef.id);
+    }
+  };
+
   const dispatch = useAppDispatch();
   const handleSignOut = () => {
     auth.signOut()
@@ -61,10 +75,10 @@ const Sidebar = () => {
               <ExpandMoreOutlined />
               <h4>Text Channels</h4>
             </div>
-            <AddIcon className="sidebarAddChannel"/>
+            <AddIcon className="sidebarAddChannel" onClick={() => addChannel()}/>
           </div>
           <div className="sidebarChannelsList">
-            {channels.map((channel) => (
+            {channels.map((channel: Channel) => (
               <SidebarChannel
                 key={channel.id}
                 id={channel.id}

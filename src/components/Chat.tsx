@@ -3,6 +3,8 @@ import styled from 'styled-components';
 import ChatHeader from './ChatHeader';
 import Message from './Message';
 import { AddCircleOutline, CardGiftcard, GifBoxOutlined, EmojiEmotions, MessageSharp } from '@mui/icons-material';
+import { useAppSelector } from '../app/hooks';
+import { RootState } from '../app/store';
 
 interface Message {
     message: string;
@@ -41,7 +43,9 @@ const ChatInputIcons = styled.div`
     }
 `;
 
-const Chat: React.FC = () => {
+const Chat = () => {
+    //const channelName = useAppSelector((state: RootState) => state.channel.channelName);
+    
     return (
         <div className="chat">
             <ChatHeader channelName="Test Channel Name" />
