@@ -5,16 +5,26 @@ import { ExpandMoreOutlined, Mic, Settings } from "@mui/icons-material";
 import MicIcon from '@mui/icons-material/Mic';
 import HeadphonesIcon from '@mui/icons-material/Headphones';
 import SettingsIcon from '@mui/icons-material/Settings';
-import { auth } from '../firebase';
+import { auth, db } from '../firebase';
 import { useAppDispatch } from "../app/hooks";
 import { logout } from "../features/userSlice";
 import { useAppSelector } from '../app/hooks';
 import { RootState } from '../app/store';
+import { collection, onSnapshot, query } from 'firebase/firestore';
+import { useState, useEffect } from 'react';
+import SidebarChannel from './SidebarChannel';
+
+interface Channel {
+  id: string;
+  channel: string;
+}
 
 const Sidebar = () => {
-  const user = useAppSelector((state: RootState) => state.user.user);
-  const dispatch = useAppDispatch();
+  const [channels, setChannels] = useState<Channel[]>([]);
 
+  const user = useAppSelector((state: RootState) => state.user.user);
+  
+  const dispatch = useAppDispatch();
   const handleSignOut = () => {
     auth.signOut()
       .then(() => {
@@ -54,15 +64,13 @@ const Sidebar = () => {
             <AddIcon className="sidebarAddChannel"/>
           </div>
           <div className="sidebarChannelsList">
-            <div className="sidebarChannel">
-              <span># Channel 1</span>
-            </div>
-            <div className="sidebarChannel">
-              <span># Channel 2</span>
-            </div>
-            <div className="sidebarChannel">
-              <span># Channel 3</span>
-            </div>
+            {channels.map((channel) => (
+              <SidebarChannel
+                key={channel.id}
+                id={channel.id}
+                channel={channel}
+              />
+            ))}
           </div>
           <div className="sidebarSettings">
               <div className="sidebarAccount">
