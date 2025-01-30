@@ -1,7 +1,7 @@
 import { DocumentData } from "firebase/firestore/lite";
-import React, { useEffect } from "react";
+import React from "react";
 import { useAppDispatch } from "../app/hooks";
-import { setChannelInfo } from "../features/appSlice";
+import { setChannelInfo } from "../features/channelSlice";
 import "./SidebarChannel.scss";
 
 type Props = {
@@ -9,22 +9,20 @@ type Props = {
   channel: DocumentData;
 };
 
-const SidebarChannel = (props: Props) => {
-  const { id, channel } = props;
+const SidebarChannel = ({ id, channel }: Props) => {
   const dispatch = useAppDispatch();
 
+  const handleClick = () => {
+    dispatch(
+      setChannelInfo({
+        channelId: id,
+        channelName: channel.channel.channelName,
+      })
+    );
+  };
+
   return (
-    <div
-      className="sidebarChannel"
-      onClick={() =>
-        dispatch(
-          setChannelInfo({
-            channelId: id,
-            channelName: channel.channel.channelName,
-          })
-        )
-      }
-    >
+    <div className="sidebarChannel" onClick={handleClick}>
       <h4>
         <span className="sidebarChannelHash">#</span>
         {channel.channel.channelName}

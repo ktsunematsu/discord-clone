@@ -1,15 +1,25 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import styled from 'styled-components';
 import ChatHeader from './ChatHeader';
 import Message from './Message';
 import { AddCircleOutline, CardGiftcard, GifBoxOutlined, EmojiEmotions, MessageSharp } from '@mui/icons-material';
 import { useAppSelector } from '../app/hooks';
 import { RootState } from '../app/store';
+import { Input } from '@mui/material';
+import { useState } from 'react';
+import { db } from '../firebase';
+import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
+
 
 interface Message {
     message: string;
     timestamp: string;
-    user: string;
+    user: {
+        uid: string;
+        photo: string;
+        email: string;
+        displayName: string;
+    };
 }
 
 const ChatInputContainer = styled.div`
@@ -44,11 +54,35 @@ const ChatInputIcons = styled.div`
 `;
 
 const Chat = () => {
-    //const channelName = useAppSelector((state: RootState) => state.channel.channelName);
-    
+    const [inputText, setInputText] = useState<string>('');
+
+    const channelName = useAppSelector((state: RootState) => state.channel.channelName);
+    const channelId = useAppSelector((state: RootState) => state.channel.channelId);
+    const user = useAppSelector((state: RootState) => state.user.user);
+    const sendMessage = async (e: React.FormEvent) => {
+        e.preventDefault();
+
+        if (inputText.trim() && channelId) {
+            try {
+                await addDoc(collection(db, 'channels', channelId, 'messages'), {
+                    timestamp: serverTimestamp(),
+                    message: inputText,
+                    user: user
+                });
+                setInputText('');
+            } catch (error) {
+                console.error('Error sending message:', error);
+            }
+        }
+    };
+
+    useEffect(() => {
+        console.log('Selected Channel:', channelName);
+    }, [channelName]);
+
     return (
         <div className="chat">
-            <ChatHeader channelName="Test Channel Name" />
+            <ChatHeader channelName={channelName} />
 
             <div className="chatMessages">
                 <Message />
@@ -59,9 +93,23 @@ const Chat = () => {
             <ChatInputContainer>
                 <AddCircleOutline fontSize="large" />
                 <ChatForm>
-                    <input placeholder={`Message #TEST`} />
+                    <input 
+                    type="text"
+                    placeholder={`Message #TEST`}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                        setInputText(e.target.value)
+                    } 
+                />
+                <button 
+                    type="submit"
+                    className="chatInputButton"
+                    onClick={(e: React.MouseEvent<HTMLButtonElement>) =>
+                        sendMessage(e)
+                    }
+                >
+                    Send Message
+                </button>
                 </ChatForm>
-
                 <ChatInputIcons>
                     <CardGiftcard />
                     <GifBoxOutlined />

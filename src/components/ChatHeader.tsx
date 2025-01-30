@@ -6,13 +6,19 @@ import HelpIcon from "@mui/icons-material/Help";
 import PushPinIcon from "@mui/icons-material/PushPin";
 import "./ChatHeader.scss";
 
-const ChatHeader = () => {
+type Props = {
+    channelName: string | null;
+};
+
+const ChatHeader = (props: Props) => {
+    const { channelName } = props;
+
     return (
         <div className="chatHeader">
             <div className="chatHeaderLeft">
                 <h3>
                     <span className="chatHeaderHash">#</span>
-                    Test Channel
+                    {channelName}
                 </h3>
             </div>
 
