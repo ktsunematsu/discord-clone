@@ -8,12 +8,11 @@ import { RootState } from '../app/store';
 import { Input } from '@mui/material';
 import { useState } from 'react';
 import { db } from '../firebase';
-import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
+import { addDoc, collection, serverTimestamp, onSnapshot, Timestamp } from 'firebase/firestore';
 
-
-interface Message {
+interface Messages {
     message: string;
-    timestamp: string;
+    timestamp: Timestamp;
     user: {
         uid: string;
         photo: string;
@@ -54,7 +53,8 @@ const ChatInputIcons = styled.div`
 `;
 
 const Chat = () => {
-    const [inputText, setInputText] = useState<string>('');
+    const [messages, setMessages] = useState<Messages[]>([]);
+    const [inputText, setInputText] = useState<string>("");
 
     const channelName = useAppSelector((state: RootState) => state.channel.channelName);
     const channelId = useAppSelector((state: RootState) => state.channel.channelId);
@@ -77,8 +77,26 @@ const Chat = () => {
     };
 
     useEffect(() => {
-        console.log('Selected Channel:', channelName);
-    }, [channelName]);
+        let collectionRef = collection(
+            db,
+            'channels',
+            String(channelId),
+            'messages'
+        );
+
+        onSnapshot(collectionRef, (snapshot) => {
+            let results: Messages[] = [];
+            snapshot.docs.forEach((doc) => {
+                results.push({
+                    timestamp: doc.data().timestamp,
+                    message: doc.data().message,
+                    user: doc.data().user,
+                });
+            });
+            setMessages(results);
+            console.log('Messages:', results);
+        });
+    }, [channelId]);
 
     return (
         <div className="chat">
@@ -119,5 +137,6 @@ const Chat = () => {
         </div>
     );
 };
+
 
 export default Chat;
