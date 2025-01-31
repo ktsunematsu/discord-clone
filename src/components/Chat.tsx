@@ -8,7 +8,7 @@ import { RootState } from '../app/store';
 import { Input } from '@mui/material';
 import { useState } from 'react';
 import { db } from '../firebase';
-import { addDoc, collection, serverTimestamp, onSnapshot, Timestamp } from 'firebase/firestore';
+import { addDoc, collection, serverTimestamp, onSnapshot, Timestamp, query, orderBy } from 'firebase/firestore';
 
 interface Messages {
     message: string;
@@ -52,6 +52,28 @@ const ChatInputIcons = styled.div`
     }
 `;
 
+// styled-componentsの定義を追加
+const ChatMessagesContainer = styled.div`
+    flex: 1;
+    overflow-y: scroll;
+    max-height: calc(100vh - 190px); // ヘッダーと入力欄の高さを考慮
+    padding: 20px;
+
+    /* スクロールバーのスタイリング */
+    ::-webkit-scrollbar {
+        width: 8px;
+    }
+
+    ::-webkit-scrollbar-track {
+        background: #2f3136;
+    }
+
+    ::-webkit-scrollbar-thumb {
+        background: #202225;
+        border-radius: 4px;
+    }
+`;
+
 const Chat = () => {
     const [messages, setMessages] = useState<Messages[]>([]);
     const [inputText, setInputText] = useState<string>("");
@@ -74,6 +96,7 @@ const Chat = () => {
                 console.error('Error sending message:', error);
             }
         }
+        setInputText('');
     };
 
     useEffect(() => {
@@ -84,7 +107,12 @@ const Chat = () => {
             'messages'
         );
 
-        onSnapshot(collectionRef, (snapshot) => {
+        const collectionRefOrderBy = query(
+            collectionRef,
+            orderBy('timestamp', 'asc')
+        );
+
+        onSnapshot(collectionRefOrderBy, (snapshot) => {
             let results: Messages[] = [];
             snapshot.docs.forEach((doc) => {
                 results.push({
@@ -102,11 +130,16 @@ const Chat = () => {
         <div className="chat">
             <ChatHeader channelName={channelName} />
 
-            <div className="chatMessages">
-                <Message />
-                <Message />
-                <Message />
-            </div>
+            <ChatMessagesContainer>
+                {messages.map((message, index) => (
+                    <Message
+                        key={index}
+                        message={message.message}
+                        timestamp={message.timestamp}
+                        user={message.user}
+                    />
+                ))}
+            </ChatMessagesContainer>
             
             <ChatInputContainer>
                 <AddCircleOutline fontSize="large" />
@@ -116,7 +149,8 @@ const Chat = () => {
                     placeholder={`Message #TEST`}
                     onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                         setInputText(e.target.value)
-                    } 
+                    }
+                    value={inputText} 
                 />
                 <button 
                     type="submit"
