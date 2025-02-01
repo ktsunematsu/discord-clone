@@ -1,20 +1,25 @@
-import { initializeApp } from "firebase/app";
-import { getFirestore } from "firebase/firestore";
-import { getAuth, GoogleAuthProvider } from "firebase/auth";
+import { initializeApp } from 'firebase/app';
+import { getFirestore } from 'firebase/firestore';
+import { getAuth, GoogleAuthProvider, browserLocalPersistence, setPersistence } from 'firebase/auth';
 
 const firebaseConfig = {
-  apiKey: "AIzaSyDxL797QLarXi69kv_6u54zzcVB56jV-Zk",
-  authDomain: "discord-clone-78a3f.firebaseapp.com",
-  projectId: "discord-clone-78a3f",
-  storageBucket: "discord-clone-78a3f.firebasestorage.app",
-  messagingSenderId: "334088161481",
-  appId: "1:334088161481:web:1b73422207d093d86ba518"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID
 };
 
-// Initialize Firebase
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
 const provider = new GoogleAuthProvider();
 
-export { db, auth, provider };
+provider.setCustomParameters({
+  prompt: 'select_account'
+});
+
+setPersistence(auth, browserLocalPersistence);
+
+export { auth, provider, db };

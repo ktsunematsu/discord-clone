@@ -122,9 +122,14 @@
             h4 {
               color: white;
               font-weight: 500;
+              margin: 0; // マージンを削除
+              padding: 0; // パディングを削除
             }
+            
             span {
               color: #686a6e;
+              font-size: 12px;
+              display: block; // ブロック要素として表示
             }
           }
         }

@@ -1,13 +1,24 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import styled from 'styled-components';
 import ChatHeader from './ChatHeader';
 import Message from './Message';
 import { AddCircleOutline, CardGiftcard, GifBoxOutlined, EmojiEmotions, MessageSharp } from '@mui/icons-material';
+import { useAppSelector } from '../app/hooks';
+import { RootState } from '../app/store';
+import { Input } from '@mui/material';
+import { useState } from 'react';
+import { db } from '../firebase';
+import { addDoc, collection, serverTimestamp, onSnapshot, Timestamp, query, orderBy } from 'firebase/firestore';
 
-interface Message {
+interface Messages {
     message: string;
-    timestamp: string;
-    user: string;
+    timestamp: Timestamp;
+    user: {
+        uid: string;
+        photo: string;
+        email: string;
+        displayName: string;
+    };
 }
 
 const ChatInputContainer = styled.div`
@@ -41,23 +52,116 @@ const ChatInputIcons = styled.div`
     }
 `;
 
-const Chat: React.FC = () => {
+// styled-componentsの定義を追加
+const ChatMessagesContainer = styled.div`
+    flex: 1;
+    overflow-y: scroll;
+    max-height: calc(100vh - 190px); // ヘッダーと入力欄の高さを考慮
+    padding: 20px;
+
+    /* スクロールバーのスタイリング */
+    ::-webkit-scrollbar {
+        width: 8px;
+    }
+
+    ::-webkit-scrollbar-track {
+        background: #2f3136;
+    }
+
+    ::-webkit-scrollbar-thumb {
+        background: #202225;
+        border-radius: 4px;
+    }
+`;
+
+const Chat = () => {
+    const [messages, setMessages] = useState<Messages[]>([]);
+    const [inputText, setInputText] = useState<string>("");
+
+    const channelName = useAppSelector((state: RootState) => state.channel.channelName);
+    const channelId = useAppSelector((state: RootState) => state.channel.channelId);
+    const user = useAppSelector((state: RootState) => state.user.user);
+    const sendMessage = async (e: React.FormEvent) => {
+        e.preventDefault();
+
+        if (inputText.trim() && channelId) {
+            try {
+                await addDoc(collection(db, 'channels', channelId, 'messages'), {
+                    timestamp: serverTimestamp(),
+                    message: inputText,
+                    user: user
+                });
+                setInputText('');
+            } catch (error) {
+                console.error('Error sending message:', error);
+            }
+        }
+        setInputText('');
+    };
+
+    useEffect(() => {
+        let collectionRef = collection(
+            db,
+            'channels',
+            String(channelId),
+            'messages'
+        );
+
+        const collectionRefOrderBy = query(
+            collectionRef,
+            orderBy('timestamp', 'asc')
+        );
+
+        onSnapshot(collectionRefOrderBy, (snapshot) => {
+            let results: Messages[] = [];
+            snapshot.docs.forEach((doc) => {
+                results.push({
+                    timestamp: doc.data().timestamp,
+                    message: doc.data().message,
+                    user: doc.data().user,
+                });
+            });
+            setMessages(results);
+            console.log('Messages:', results);
+        });
+    }, [channelId]);
+
     return (
         <div className="chat">
-            <ChatHeader channelName="Test Channel Name" />
+            <ChatHeader channelName={channelName} />
 
-            <div className="chatMessages">
-                <Message />
-                <Message />
-                <Message />
-            </div>
+            <ChatMessagesContainer>
+                {messages.map((message, index) => (
+                    <Message
+                        key={index}
+                        message={message.message}
+                        timestamp={message.timestamp}
+                        user={message.user}
+                    />
+                ))}
+            </ChatMessagesContainer>
             
             <ChatInputContainer>
                 <AddCircleOutline fontSize="large" />
                 <ChatForm>
-                    <input placeholder={`Message #TEST`} />
+                    <input 
+                    type="text"
+                    placeholder={`Message #TEST`}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                        setInputText(e.target.value)
+                    }
+                    value={inputText} 
+                />
+                <button 
+                    type="submit"
+                    className="chatInputButton"
+                    onClick={(e: React.MouseEvent<HTMLButtonElement>) =>
+                        sendMessage(e)
+                    }
+                >
+                    Send Message
+                </button>
                 </ChatForm>
-
                 <ChatInputIcons>
                     <CardGiftcard />
                     <GifBoxOutlined />
@@ -67,5 +171,6 @@ const Chat: React.FC = () => {
         </div>
     );
 };
+
 
 export default Chat;
