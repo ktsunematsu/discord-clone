@@ -1,14 +1,15 @@
-import React, { useEffect } from 'react';
-import styled from 'styled-components';
+import React, { useEffect, useState } from 'react';
+import styled from '@emotion/styled';
+import { css } from '@emotion/react';
 import ChatHeader from './ChatHeader';
 import Message from './Message';
-import { AddCircleOutline, CardGiftcard, GifBoxOutlined, EmojiEmotions, MessageSharp } from '@mui/icons-material';
-import { useAppSelector } from '../app/hooks';
+import { AddCircleOutline, CardGiftcard, GifBoxOutlined, EmojiEmotions } from '@mui/icons-material';
+import { useAppSelector, useAppDispatch } from '../app/hooks';
 import { RootState } from '../app/store';
-import { Input } from '@mui/material';
-import { useState } from 'react';
 import { db } from '../firebase';
-import { addDoc, collection, serverTimestamp, onSnapshot, Timestamp, query, orderBy } from 'firebase/firestore';
+import { addDoc, collection, serverTimestamp, onSnapshot, query, orderBy, Timestamp, getDocs, limit } from 'firebase/firestore';
+import { setChannelInfo } from '../features/channelSlice';
+import SendIcon from "@mui/icons-material/Send";
 
 interface Messages {
     message: string;
@@ -21,66 +22,149 @@ interface Messages {
     };
 }
 
-const ChatInputContainer = styled.div`
-    color: lightgray;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 15px;
-    border-radius: 5px;
-    margin: 20px;
-    background-color: #474b53;
+const ChatContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  background-color: #36393f;
+  height: 100vh;
 `;
 
-const ChatForm = styled.form`
-    flex: 1;
-    input {
-        padding: 15px;
-        background: transparent;
-        border: none;
-        outline-width: 0;
-        color: white;
-        font-size: large;
-        width: 100%;
+const ChatMessages = styled.div`
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+`;
+
+const MessageContainer = styled.div`
+  display: flex;
+  align-items: flex-start;
+  padding: 8px 20px;
+  gap: 10px;
+  width: auto;
+`;
+
+const UserAvatar = styled.img`
+  width: 40px;
+  height: 40px;
+  min-width: 40px;
+  border-radius: 50%;
+`;
+
+const MessageContent = styled.div`
+  display: flex;
+  flex-direction: column;
+  color: #dcddde;
+  align-self: flex-start;
+
+  .messageInfo {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    justify-content: flex-start;
+
+    .timestamp {
+      color: #72767d;
+      font-size: 12px;
     }
+  }
+
+  .messageText {
+    text-align: left;
+  }
+`;
+
+const ChatInput = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 15px;
+  border-radius: 5px;
+  margin: 20px;
+  background-color: #474b53;
+
+  form {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  input {
+    flex: 1;
+    padding: 15px;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: white;
+    font-size: large;
+  }
+
+  .sendIcon {
+    color: #b9bbbe;
+    cursor: pointer;
+    &:hover {
+      color: white;
+    }
+  }
 `;
 
 const ChatInputIcons = styled.div`
-    display: flex;
-    .MuiSvgIcon-root {
-        padding: 5px;
+  display: flex;
+  gap: 5px;
+  color: #b9bbbe;
+  .MuiSvgIcon-root {
+    cursor: pointer;
+    &:hover {
+      color: white;
     }
+  }
 `;
 
-// styled-componentsの定義を追加
-const ChatMessagesContainer = styled.div`
-    flex: 1;
-    overflow-y: scroll;
-    max-height: calc(100vh - 190px); // ヘッダーと入力欄の高さを考慮
-    padding: 20px;
-
-    /* スクロールバーのスタイリング */
-    ::-webkit-scrollbar {
-        width: 8px;
-    }
-
-    ::-webkit-scrollbar-track {
-        background: #2f3136;
-    }
-
-    ::-webkit-scrollbar-thumb {
-        background: #202225;
-        border-radius: 4px;
-    }
+const PlusIcon = styled(AddCircleOutline)`
+  color: #b9bbbe;
+  cursor: pointer;
+  &:hover {
+    color: white;
+  }
 `;
 
 const Chat = () => {
     const [messages, setMessages] = useState<Messages[]>([]);
     const [inputText, setInputText] = useState<string>("");
 
+    const dispatch = useAppDispatch();
     const channelName = useAppSelector((state: RootState) => state.channel.channelName);
     const channelId = useAppSelector((state: RootState) => state.channel.channelId);
-    const user = useAppSelector((state: RootState) => state.user.user);
+    const user = useAppSelector((state) => state.user.user);
+
+    useEffect(() => {
+        const setDefaultChannel = async () => {
+            if (!channelId) {
+                try {
+                    const channelsRef = collection(db, 'channels');
+                    const q = query(channelsRef, limit(1));
+                    const querySnapshot = await getDocs(q);
+                    
+                    if (!querySnapshot.empty) {
+                        const defaultChannel = querySnapshot.docs[0];
+                        dispatch(
+                            setChannelInfo({
+                                channelId: defaultChannel.id,
+                                channelName: defaultChannel.data().channelName,
+                            })
+                        );
+                    }
+                } catch (error) {
+                    console.error('Default channel fetch error:', error);
+                }
+            }
+        };
+
+        setDefaultChannel();
+    }, [channelId, dispatch]);
+
     const sendMessage = async (e: React.FormEvent) => {
         e.preventDefault();
 
@@ -100,7 +184,7 @@ const Chat = () => {
     };
 
     useEffect(() => {
-        let collectionRef = collection(
+        const collectionRef = collection(
             db,
             'channels',
             String(channelId),
@@ -113,7 +197,7 @@ const Chat = () => {
         );
 
         onSnapshot(collectionRefOrderBy, (snapshot) => {
-            let results: Messages[] = [];
+            const results: Messages[] = [];
             snapshot.docs.forEach((doc) => {
                 results.push({
                     timestamp: doc.data().timestamp,
@@ -127,50 +211,48 @@ const Chat = () => {
     }, [channelId]);
 
     return (
-        <div className="chat">
+        <ChatContainer>
             <ChatHeader channelName={channelName} />
-
-            <ChatMessagesContainer>
+            <ChatMessages>
                 {messages.map((message, index) => (
-                    <Message
-                        key={index}
-                        message={message.message}
-                        timestamp={message.timestamp}
-                        user={message.user}
-                    />
+                    <MessageContainer key={index}>
+                        <UserAvatar src={message.user.photo} alt={message.user.displayName} />
+                        <MessageContent>
+                            <div className="messageInfo">
+                                <span>{message.user.displayName}</span>
+                                <span className="timestamp">
+                                    {message.timestamp?.toDate().toLocaleString('ja-JP', {
+                                        year: 'numeric',
+                                        month: '2-digit',
+                                        day: '2-digit',
+                                        hour: '2-digit',
+                                        minute: '2-digit',
+                                        hour12: false
+                                    }).replace(/\//g, '/')}
+                                </span>
+                            </div>
+                            <div className="messageText">{message.message}</div>
+                        </MessageContent>
+                    </MessageContainer>
                 ))}
-            </ChatMessagesContainer>
-            
-            <ChatInputContainer>
-                <AddCircleOutline fontSize="large" />
-                <ChatForm>
-                    <input 
-                    type="text"
-                    placeholder={`Message #TEST`}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                        setInputText(e.target.value)
-                    }
-                    value={inputText} 
-                />
-                <button 
-                    type="submit"
-                    className="chatInputButton"
-                    onClick={(e: React.MouseEvent<HTMLButtonElement>) =>
-                        sendMessage(e)
-                    }
-                >
-                    Send Message
-                </button>
-                </ChatForm>
+            </ChatMessages>
+            <ChatInput>
+                <PlusIcon />
+                <form onSubmit={sendMessage}>
+                    <input
+                        placeholder={`#${channelName}へメッセージを送信`}
+                        value={inputText}
+                        onChange={(e) => setInputText(e.target.value)}
+                    />
+                </form>
                 <ChatInputIcons>
                     <CardGiftcard />
                     <GifBoxOutlined />
                     <EmojiEmotions />
                 </ChatInputIcons>
-            </ChatInputContainer>
-        </div>
+            </ChatInput>
+        </ChatContainer>
     );
 };
-
 
 export default Chat;
