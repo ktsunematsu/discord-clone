@@ -1,7 +1,6 @@
 import { Avatar } from "@mui/material";
 import { FieldValue, Timestamp } from "firebase/firestore";
 import React from "react";
-import "./Message.scss";
 
 type Props = {
   message: string;
@@ -14,21 +13,37 @@ type Props = {
   };
 };
 
+const styles = {
+  message: {
+    display: "flex",
+    alignItems: "center",
+    padding: "15px",
+    color: "white",
+    marginBottom: "-15px",
+  },
+  messageInfo: {
+    padding: "20px 20px 20px 10px",
+  },
+  messageTimestamp: {
+    color: "#7b7c85",
+    marginLeft: "20px",
+    fontSize: "16px",
+  }
+};
+
 const Message = (props: Props) => {
   const { message, timestamp, user } = props;
-  // console.log(timestamp.seconds.toDate());
 
   return (
-    <div className="message">
+    <div style={styles.message}>
       <Avatar src={user?.photo} />
-      <div className="messageInfo">
+      <div style={styles.messageInfo}>
         <h4>
           {user?.displayName}
-          <span className="messageTimestamp">
+          <span style={styles.messageTimestamp}>
             {new Date(timestamp?.toDate()).toLocaleString()}
           </span>
         </h4>
-
         <p>{message}</p>
       </div>
     </div>

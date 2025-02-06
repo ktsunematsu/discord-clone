@@ -1,4 +1,3 @@
-import './App.scss';
 import Sidebar from './components/Sidebar';
 import Chat from './components/Chat';
 import Login from './components/Login';
@@ -8,6 +7,28 @@ import { useEffect } from 'react';
 import { auth } from './firebase';
 import { login, logout } from './features/userSlice';
 import { useAppDispatch } from './app/hooks';
+
+const styles = {
+  app: {
+    display: "flex",
+    height: "100vh",
+    width: "100vw",
+    textAlign: "center" as const,
+    backgroundColor: "#313338",
+    overflow: "hidden",
+  },
+  header: {
+    fontSize: "2em",
+    color: "white",
+  },
+  appBody: {
+    display: "flex",
+    flex: 1,
+  },
+  appBackground: {
+    backgroundColor: "#f0f0f0",
+  }
+};
 
 function App() {
   const user = useAppSelector((state: RootState) => state.user.user);
@@ -33,20 +54,14 @@ function App() {
   }, [dispatch]);
 
   return (
-    <div className="App">
+    <div style={styles.app}>
       {user ? (
         <>
-          {/* sidebar */}
-            {/* <Suspense fallback={<div>...Loading</div>}> */}
-            <Sidebar />
-            {/* </Suspense> */}
-          {/* home */}
+          <Sidebar />
           <Chat />
         </>
       ) : (
-        <>
-          <Login />
-        </>
+        <Login />
       )}
     </div>
   );
