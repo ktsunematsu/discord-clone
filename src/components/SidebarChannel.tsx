@@ -16,7 +16,7 @@ const styles = {
     transition: "background-color 0.2s ease",
   },
   sidebarChannelHover: {
-    backgroundColor: "#2f3136",
+    backgroundColor: "#42464d",
     color: "white",
   },
   selected: {
