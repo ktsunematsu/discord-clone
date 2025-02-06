@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import styled from '@emotion/styled';
 import { css } from '@emotion/react';
 import ChatHeader from './ChatHeader';
@@ -133,6 +133,7 @@ const PlusIcon = styled(AddCircleOutline)`
 const Chat = () => {
     const [messages, setMessages] = useState<Messages[]>([]);
     const [inputText, setInputText] = useState<string>("");
+    const messagesEndRef = useRef<HTMLDivElement>(null);
 
     const dispatch = useAppDispatch();
     const channelName = useAppSelector((state: RootState) => state.channel.channelName);
@@ -210,6 +211,14 @@ const Chat = () => {
         });
     }, [channelId]);
 
+    const scrollToBottom = () => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    };
+
+    useEffect(() => {
+        scrollToBottom();
+    }, [messages]);
+
     return (
         <ChatContainer>
             <ChatHeader channelName={channelName} />
@@ -235,6 +244,7 @@ const Chat = () => {
                         </MessageContent>
                     </MessageContainer>
                 ))}
+                <div ref={messagesEndRef} />
             </ChatMessages>
             <ChatInput>
                 <PlusIcon />
