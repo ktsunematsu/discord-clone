@@ -10,6 +10,7 @@ import { db } from '../firebase';
 import { addDoc, collection, serverTimestamp, onSnapshot, query, orderBy, Timestamp, getDocs, limit } from 'firebase/firestore';
 import { setChannelInfo } from '../features/channelSlice';
 import SendIcon from "@mui/icons-material/Send";
+import { generateResponse } from '../utils/openai';
 
 interface Messages {
     message: string;
@@ -50,6 +51,7 @@ const UserAvatar = styled.img`
   height: 40px;
   min-width: 40px;
   border-radius: 50%;
+  object-fit: cover; // アスペクト比を維持したままリサイズ
 `;
 
 const MessageContent = styled.div`
@@ -72,6 +74,9 @@ const MessageContent = styled.div`
 
   .messageText {
     text-align: left;
+    white-space: pre-wrap;  // 改行を保持
+    word-wrap: break-word;  // 長い単語を折り返す
+    margin-top: 4px;
   }
 `;
 
@@ -170,18 +175,38 @@ const Chat = () => {
         e.preventDefault();
 
         if (inputText.trim() && channelId) {
+            const messageText = inputText;  // 入力内容を一時保存
+            setInputText('');  // 即座に入力フィールドをクリア
+            
             try {
+                // ユーザーメッセージの送信
                 await addDoc(collection(db, 'channels', channelId, 'messages'), {
                     timestamp: serverTimestamp(),
-                    message: inputText,
+                    message: messageText,
                     user: user
                 });
-                setInputText('');
+
+                // Chatbotチャンネルの場合、AIの応答を生成
+                if (channelName === 'Chatbot') {
+                    const botResponse = await generateResponse(messageText);
+                    if (botResponse) {
+                        await addDoc(collection(db, 'channels', channelId, 'messages'), {
+                            timestamp: serverTimestamp(),
+                            message: botResponse,
+                            user: {
+                                uid: 'chatbot',
+                                photo: '/discord.png',
+                                email: 'chatbot@example.com',
+                                displayName: 'ChatBot'
+                            }
+                        });
+                    }
+                }
             } catch (error) {
                 console.error('Error sending message:', error);
+                setInputText(messageText);  // エラー時は入力内容を復元
             }
         }
-        setInputText('');
     };
 
     useEffect(() => {
