@@ -7,6 +7,8 @@ import { useEffect } from 'react';
 import { auth } from './firebase';
 import { login, logout } from './features/userSlice';
 import { useAppDispatch } from './app/hooks';
+import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { db } from './firebase';
 
 const styles = {
   app: {
@@ -36,15 +38,26 @@ function App() {
   const dispatch = useAppDispatch();
 
   useEffect(() => {
-    auth.onAuthStateChanged((authUser) => {
-      console.log("user is", authUser);
+    auth.onAuthStateChanged(async (authUser) => {
       if (authUser) {
+        // デフォルトのプロフィール画像URL
+        const defaultPhoto = '/discord.png';
+
+        // ユーザーのオンライン状態を更新
+        const userRef = doc(db, 'users', authUser.uid);
+        updateDoc(userRef, {
+          status: 'online',
+          lastSeen: serverTimestamp()
+        });
+
         dispatch(
           login({
             uid: authUser.uid,
-            photo: authUser.photoURL,
+            photo: authUser.photoURL || defaultPhoto,
             email: authUser.email,
             displayName: authUser.displayName,
+            status: 'online',
+            lastSeen: serverTimestamp()
           })
         );
       } else {
