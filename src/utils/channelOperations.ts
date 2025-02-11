@@ -1,31 +1,14 @@
 import { db } from '../firebase';
 import { doc, updateDoc, deleteDoc, getDoc } from 'firebase/firestore';
 
-// チャンネルの型定義
-interface Channel {
-  channelName: string;
-  isDefault?: boolean;
-}
-
-interface ChannelData {
-  channel: Channel;
-  updatedAt: string;
-}
-
-// チャンネル名のバリデーション
-const validateChannelName = (name: string): boolean => {
-  if (name.length < 2 || name.length > 32) return false;
-  const pattern = /^[a-zA-Z0-9_-]+$/;
-  return pattern.test(name);
-};
 
 /**
  * チャンネル名を更新する
  */
 export const updateChannelName = async (channelId: string, newName: string): Promise<boolean> => {
   try {
-    if (!validateChannelName(newName)) {
-      throw new Error('無効なチャンネル名です（2〜32文字の英数字、ハイフン、アンダースコアのみ使用可能）');
+    if (!channelId) {
+      throw new Error('チャンネルIDが指定されていません');
     }
 
     const channelRef = doc(db, 'channels', channelId);
@@ -35,14 +18,17 @@ export const updateChannelName = async (channelId: string, newName: string): Pro
       throw new Error('指定されたチャンネルが見つかりません');
     }
 
+    const updatedAt = new Date().toISOString(); // ISO文字列形式に変換
+
     await updateDoc(channelRef, {
-      'channelName': newName,
-      'updatedAt': new Date().toISOString()
+      'channel.channelName': newName,
+      'updatedAt': updatedAt
     });
 
+    console.log('チャンネル名を更新しました:', { channelId, newName, updatedAt });
     return true;
   } catch (error) {
-    console.error('チャンネル名の更新エラー:', error);
+    console.error('チャンネル名の更新エラー:', error, { channelId });
     throw error;
   }
 };
@@ -52,6 +38,10 @@ export const updateChannelName = async (channelId: string, newName: string): Pro
  */
 export const deleteChannel = async (channelId: string): Promise<boolean> => {
   try {
+    if (!channelId) {
+      throw new Error('チャンネルIDが指定されていません');
+    }
+
     const channelRef = doc(db, 'channels', channelId);
     const channelDoc = await getDoc(channelRef);
     
@@ -59,15 +49,11 @@ export const deleteChannel = async (channelId: string): Promise<boolean> => {
       throw new Error('指定されたチャンネルが見つかりません');
     }
 
-    const channelData = channelDoc.data() as ChannelData;
-    if (channelData.channel.isDefault) {
-      throw new Error('デフォルトチャンネルは削除できません');
-    }
-
     await deleteDoc(channelRef);
+    console.log('チャンネルを削除しました:', channelId);
     return true;
   } catch (error) {
-    console.error('チャンネル削除エラー:', error);
+    console.error('チャンネル削除エラー:', error, { channelId });
     throw error;
   }
 };
